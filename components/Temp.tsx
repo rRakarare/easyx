@@ -11,6 +11,13 @@ interface IProps {
   data: TemplateData;
 }
 
+interface Image {
+  isImage: true;
+  url: any;
+  width: Number;
+  height: Number;
+}
+
 function saveFile(filename, blob) {
   // see: https://stackoverflow.com/questions/19327749/javascript-blob-filename-without-link
 
@@ -34,29 +41,89 @@ function saveFile(filename, blob) {
   }, 0);
 }
 
-const kaka = {
+const kaka: any = {
+  first: "loremipsum",
+  second: "asdqwe123",
+  leckmi: { isImage: true, url: "frame1.png", width: 200, height: 200 },
   posts: [
-    { author: "rene", text: "asdqwe123" },
-    { author: "ewq", text: "asdqwe123231213" },
+    { author: "Alon Bar", text: "Very important\ntext here!", im: { isImage: true, url: "frame1.png", width: 200, height: 200 } },
+    { author: "Alon Bar", text: "Forgot to mention that...", im: { isImage: true, url: "frame1.png", width: 200, height: 200 } },
   ],
-
-  image: { isImage: true, url: "frame1.png", width: 200, height: 200 },
 };
 
 function Temp({ data }: IProps) {
+  const checkType = (item: any) => {
+    const type = Object.prototype.toString.call(item);
 
+    switch (type) {
+      case "[object Array]":
+        return "loop";
 
-  const reroll = () => {
-    const newkaka = {}
+      case "[object Object]":
+        if (item.isImage) {
+          return "image";
+        } else {
+          return "item";
+        }
 
-    const layer1Keys = Object.keys(kaka)
+      case "[object String]":
+        return "item";
 
-    layer1Keys.forEach(layer1Key => {
+      default:
+        return "";
+    }
+  };
 
-    })
+  const reroll = async () => {
 
-  }
-  
+    let newkaka: any = {...kaka};
+
+    const layer1Keys = Object.keys(kaka);
+
+    await Promise.all(
+      layer1Keys.map(async (layer1Key) => {
+        const layer1Value = kaka[layer1Key];
+        const type1 = checkType(layer1Value);
+
+        switch (type1) {
+          case "image":
+            newkaka[layer1Key] = await loadImage(layer1Value);
+            break;
+
+          case "loop":
+            await Promise.all(
+              layer1Value.map(async (layer2Object: any, index:any) => {
+                const layer2Keys = Object.keys(layer2Object);
+
+                await Promise.all(layer2Keys.map(async (layer2Key) => {
+                  const layer2Value = layer2Object[layer2Key]
+                  const type2 = checkType(layer2Value);
+
+                  switch (type2) {
+                    case 'image':
+                      newkaka[layer1Key][index][layer2Key] = await loadImage(layer2Value);
+                      break;
+
+                  
+                    default:
+                      break;
+                  }
+
+                }))
+
+              })
+            );
+
+            break;
+
+          default:
+            break;
+        }
+      })
+    );
+
+    console.log(newkaka);
+  };
 
   const [datas, setData] = useState({});
 
@@ -70,28 +137,16 @@ function Temp({ data }: IProps) {
     return template;
   };
 
-  const loadData = async () => {
-    const response = await fetch("frame1.png");
+  const loadImage = async (data: Image) => {
+    const response = await fetch(data.url);
     const img = await response.blob();
 
-    setData({
-      image1: {
-        _type: "image",
-        source: img,
-        format: img.type,
-        width: 200,
-        height: 200,
-      },
-    });
-
     return {
-      image1: {
-        _type: "image",
-        source: img,
-        format: img.type,
-        width: 200,
-        height: 200,
-      },
+      _type: "image",
+      source: img,
+      format: img.type,
+      width: data.width,
+      height: data.height,
     };
   };
 
@@ -100,7 +155,6 @@ function Temp({ data }: IProps) {
   }, [datas]);
 
   const generate = async () => {
-    const rdydata = await loadData();
 
     const templateFile = await loadTemplate();
 
