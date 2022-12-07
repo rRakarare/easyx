@@ -1,14 +1,18 @@
 import axios from "axios";
 import { TemplateHandler } from "easy-template-x";
 import { useEffect, useState } from "react";
+import { render } from "react-dom";
+import { JsxElement } from "typescript";
 
 interface TemplateData {
-  name: string;
-  age: number;
+
 }
 
 interface IProps {
   data: TemplateData;
+  outputFileName: String,
+  wordFileUrl: String,
+  render?: React.FC
 }
 
 interface Image {
@@ -41,17 +45,12 @@ function saveFile(filename, blob) {
   }, 0);
 }
 
-const kaka: any = {
-  first: "loremipsum",
-  second: "asdqwe123",
-  leckmi: { isImage: true, url: "frame1.png", width: 200, height: 200 },
-  posts: [
-    { author: "Alon Bar", text: "Very important\ntext here!", im: { isImage: true, url: "frame1.png", width: 200, height: 200 } },
-    { author: "Alon Bar", text: "Forgot to mention that...", im: { isImage: true, url: "frame1.png", width: 200, height: 200 } },
-  ],
-};
 
-function Temp({ data }: IProps) {
+
+function Temp({ data, render }: IProps) {
+
+  const renderer = render || (()=> <button>Gen</button>)
+
   const checkType = (item: any) => {
     const type = Object.prototype.toString.call(item);
 
@@ -63,11 +62,8 @@ function Temp({ data }: IProps) {
         if (item.isImage) {
           return "image";
         } else {
-          return "item";
+          return "";
         }
-
-      case "[object String]":
-        return "item";
 
       default:
         return "";
@@ -75,42 +71,42 @@ function Temp({ data }: IProps) {
   };
 
   const reroll = async () => {
+    let newData: Object = { ...data };
 
-    let newkaka: any = {...kaka};
-
-    const layer1Keys = Object.keys(kaka);
+    const layer1Keys = Object.keys(data);
 
     await Promise.all(
       layer1Keys.map(async (layer1Key) => {
-        const layer1Value = kaka[layer1Key];
+        const layer1Value = newData[layer1Key];
         const type1 = checkType(layer1Value);
 
         switch (type1) {
           case "image":
-            newkaka[layer1Key] = await loadImage(layer1Value);
+            newData[layer1Key] = await loadImage(layer1Value);
             break;
 
           case "loop":
             await Promise.all(
-              layer1Value.map(async (layer2Object: any, index:any) => {
+              layer1Value.map(async (layer2Object: any, index: any) => {
                 const layer2Keys = Object.keys(layer2Object);
 
-                await Promise.all(layer2Keys.map(async (layer2Key) => {
-                  const layer2Value = layer2Object[layer2Key]
-                  const type2 = checkType(layer2Value);
+                await Promise.all(
+                  layer2Keys.map(async (layer2Key) => {
+                    const layer2Value = layer2Object[layer2Key];
+                    const type2 = checkType(layer2Value);
 
-                  switch (type2) {
-                    case 'image':
-                      newkaka[layer1Key][index][layer2Key] = await loadImage(layer2Value);
-                      break;
+                    switch (type2) {
+                      case "image":
+                        newData[layer1Key][index][layer2Key] = await loadImage(
+                          layer2Value
+                        );
+                        break;
 
-                  
-                    default:
-                      break;
-                  }
-
-                }))
-
+                      default:
+                        break;
+                    }
+                  })
+                );
               })
             );
 
@@ -122,7 +118,8 @@ function Temp({ data }: IProps) {
       })
     );
 
-    console.log(newkaka);
+    return newData;
+    console.log(newData);
   };
 
   const [datas, setData] = useState({});
@@ -155,21 +152,18 @@ function Temp({ data }: IProps) {
   }, [datas]);
 
   const generate = async () => {
-
     const templateFile = await loadTemplate();
+    const rdydata = await reroll();
 
     const doc = await handler.process(templateFile, rdydata);
 
     saveFile("myTemplate - output.docx", doc);
   };
 
-  return (
-    <div>
-      <div>tetmmet</div>
-      <button onClick={() => reroll()}>reroll</button>
-      <button onClick={() => generate()}>gen</button>
-    </div>
-  );
+  return <>
+  <div onClick={() => generate()}>{renderer()}</div>
+  </>
 }
+
 
 export default Temp;
