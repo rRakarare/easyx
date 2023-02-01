@@ -1,17 +1,9 @@
-import axios from "axios";
 import { TemplateHandler } from "easy-template-x";
-import { useEffect, useState } from "react";
-import { render } from "react-dom";
-import { JsxElement } from "typescript";
-
-interface TemplateData {
-
-}
 
 interface IProps {
-  data: TemplateData;
+  data: any;
   outputFileName: String,
-  wordFileUrl: String,
+  wordFileUrl: any,
   render?: React.FC
 }
 
@@ -22,7 +14,7 @@ interface Image {
   height: Number;
 }
 
-function saveFile(filename, blob) {
+function saveFile(filename: string, blob: Blob) {
   // see: https://stackoverflow.com/questions/19327749/javascript-blob-filename-without-link
 
   // get downloadable url from the blob
@@ -41,13 +33,12 @@ function saveFile(filename, blob) {
   setTimeout(() => {
     link.remove();
     window.URL.revokeObjectURL(blobUrl);
-    link = null;
   }, 0);
 }
 
 
 
-function Temp({ data, render }: IProps) {
+function Temp({ data, render, outputFileName="default", wordFileUrl="default"  }: IProps) {
 
   const renderer = render || (()=> <button>Gen</button>)
 
@@ -71,13 +62,13 @@ function Temp({ data, render }: IProps) {
   };
 
   const reroll = async () => {
-    let newData: Object = { ...data };
+    let newData: any = { ...data };
 
     const layer1Keys = Object.keys(data);
 
     await Promise.all(
       layer1Keys.map(async (layer1Key) => {
-        const layer1Value = newData[layer1Key];
+        const layer1Value = newData[layer1Key as keyof typeof newData];
         const type1 = checkType(layer1Value);
 
         switch (type1) {
@@ -119,18 +110,14 @@ function Temp({ data, render }: IProps) {
     );
 
     return newData;
-    console.log(newData);
   };
 
-  const [datas, setData] = useState({});
 
   const handler = new TemplateHandler();
 
   const loadTemplate = async () => {
-    const response = await fetch("test.docx");
+    const response = await fetch(wordFileUrl);
     const template = await response.blob();
-
-    console.log(template);
     return template;
   };
 
@@ -147,9 +134,6 @@ function Temp({ data, render }: IProps) {
     };
   };
 
-  useEffect(() => {
-    console.log(datas);
-  }, [datas]);
 
   const generate = async () => {
     const templateFile = await loadTemplate();
@@ -157,11 +141,11 @@ function Temp({ data, render }: IProps) {
 
     const doc = await handler.process(templateFile, rdydata);
 
-    saveFile("myTemplate - output.docx", doc);
+    saveFile(`${outputFileName}.docx`, doc);
   };
 
   return <>
-  <div onClick={() => generate()}>{renderer()}</div>
+  <div onClick={() => generate()}>{renderer({})}</div>
   </>
 }
 

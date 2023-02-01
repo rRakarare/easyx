@@ -1,7 +1,5 @@
-import Head from 'next/head'
-import Image from 'next/image'
 import Temp from '../components/Temp'
-import styles from '../styles/Home.module.css'
+
 
 export default function Home() {
 
@@ -25,7 +23,7 @@ export default function Home() {
 
   return (
     <>
-      <Temp data={data} render={()=>(<button>fdsfdsfds</button>)} />
+      <Temp wordFileUrl="test.docx" outputFileName="alder"  data={data} render={()=>(<button>fdsfdsfds</button>)} />
     </>
   )
 }
